@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>🚚Agenda Transportes Camilo de Sousa🚚</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; color: #2c3e50; }
+    form, table { max-width: 1000px; margin: 20px auto; }
+    label { display: block; margin: 10px 0 5px; }
+    input, select, button, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background-color: #2980b9; color: white; }
+    tr:nth-child(even) { background-color: #ecf0f1; }
+    .btn { padding: 5px 10px; margin: 0 2px; cursor: pointer; }
+    .edit-btn { background-color: #f39c12; color: white; border: none; }
+    .delete-btn { background-color: #c0392b; color: white; border: none; }
+  </style>
+</head>
+<body>
+
+<h1>🚚Agenda Transportes Camilo de Sousa🚚</h1>
+
+<form id="agenda-form">
+  <input type="hidden" id="editIndex">
+
+  <label for="data">Data:</label>
+  <input type="date" id="data" required>
+
+  <label for="hora">Hora:</label>
+  <select id="hora" required>
+    <option value="">--Selecionar Hora--</option>
+    <option value="07:00">07:00</option>
+    <option value="08:00">08:00</option>
+    <option value="09:00">09:00</option>
+    <option value="10:00">10:00</option>
+    <option value="11:00">11:00</option>
+    <option value="12:00">12:00</option>
+    <option value="13:00">13:00</option>
+    <option value="14:00">14:00</option>
+    <option value="15:00">15:00</option>
+    <option value="16:00">16:00</option>
+    <option value="17:00">17:00</option>
+    <option value="18:00">18:00</option>
+    <option value="19:00">19:00</option>
+  </select>
+
+  <label for="cliente">Nome do Cliente:</label>
+  <input type="text" id="cliente" required>
+
+  <label for="telefone">Número de Telemóvel:</label>
+  <input type="text" id="telefone" required>
+
+  <label for="tipoCarga">Tipo de Carga:</label>
+  <input type="text" id="tipoCarga" required>
+
+  <label for="moradaRecolha">Morada de Recolha:</label>
+  <textarea id="moradaRecolha" rows="2" required></textarea>
+
+  <label for="moradaEntrega">Morada de Entrega:</label>
+  <textarea id="moradaEntrega" rows="2" required></textarea>
+
+  <label for="viatura">Viatura:</label>
+  <select id="viatura" required>
+    <option value="">--Selecionar--</option>
+    <option value="N10 com grua">N10 com grua</option>
+    <option value="Renault">Renault</option>
+  </select>
+
+  <button type="submit">Guardar Marcação</button>
+</form>
+
+<table id="agenda-tabela">
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Hora</th>
+      <th>Cliente</th>
+      <th>Telefone</th>
+      <th>Tipo de Carga</th>
+      <th>Morada de Recolha</th>
+      <th>Morada de Entrega</th>
+      <th>Viatura</th>
+      <th>Responsável</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const form = document.getElementById('agenda-form');
+  const tabela = document.getElementById('agenda-tabela').querySelector('tbody');
+  let marcacoes = JSON.parse(localStorage.getItem('marcacoes')) || [];
+
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const diasSemana = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+
+  function formatarData(data) {
+    const d = new Date(data);
+    const dia = d.getDate();
+    const mes = meses[d.getMonth()];
+    const ano = d.getFullYear();
+    const diaSemana = diasSemana[d.getDay()];
+    return `${diaSemana}, ${dia} de ${mes} de ${ano}`;
+  }
+
+  function validarDiaSemana() {
+    const dataSelecionada = document.getElementById('data').value;
+    if (dataSelecionada) {
+      const data = new Date(dataSelecionada);
+      const diaSemana = data.getDay();
+      if (diaSemana === 0 || diaSemana === 6) {
+        alert("Não é permitido selecionar sábado ou domingo.");
+        document.getElementById('data').value = "";
+      }
+    }
+  }
+
+  function renderTabela() {
+    tabela.innerHTML = "";
+    marcacoes.forEach((m, index) => {
+      tabela.innerHTML += `
+        <tr>
+          <td>${m.data}</td>
+          <td>${m.hora}</td>
+          <td>${m.cliente}</td>
+          <td>${m.telefone}</td>
+          <td>${m.tipoCarga}</td>
+          <td>${m.moradaRecolha}</td>
+          <td>${m.moradaEntrega}</td>
+          <td>${m.viatura}</td>
+          <td>Camilo Sousa</td>
+          <td>
+            <button class="btn edit-btn" onclick="editarMarcacao(${index})">✏️</button>
+            <button class="btn delete-btn" onclick="apagarMarcacao(${index})">🗑️</button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const editIndex = document.getElementById('editIndex').value;
+
+    const novaMarcacao = {
+      data: formatarData(document.getElementById('data').value),
+      hora: document.getElementById('hora').value,
+      cliente: document.getElementById('cliente').value,
+      telefone: document.getElementById('telefone').value,
+      tipoCarga: document.getElementById('tipoCarga').value,
+      moradaRecolha: document.getElementById('moradaRecolha').value,
+      moradaEntrega: document.getElementById('moradaEntrega').value,
+      viatura: document.getElementById('viatura').value
+    };
+
+    const conflito = marcacoes.some((m, i) =>
+      m.data === novaMarcacao.data &&
+      m.hora === novaMarcacao.hora &&
+      i != editIndex
+    );
+
+    if (conflito) {
+      alert("Já existe uma marcação para esta data e hora!");
+      return;
+    }
+
+    if (editIndex === "") {
+      marcacoes.push(novaMarcacao);
+    } else {
+      marcacoes[editIndex] = novaMarcacao;
+      document.getElementById('editIndex').value = "";
+    }
+
+    localStorage.setItem('marcacoes', JSON.stringify(marcacoes));
+    renderTabela();
+    form.reset();
+  });
+
+  function apagarMarcacao(index) {
+    if (confirm("Tem a certeza que quer apagar esta marcação?")) {
+      marcacoes.splice(index, 1);
+      localStorage.setItem('marcacoes', JSON.stringify(marcacoes));
+      renderTabela();
+    }
+  }
+
+  function editarMarcacao(index) {
+    const m = marcacoes[index];
+    const partesData = m.data.split(" ");
+    const dia = parseInt(partesData[1]);
+    const mes = meses.indexOf(partesData[3]);
+    const ano = parseInt(partesData[5]);
+    const dataConvertida = new Date(ano, mes, dia);
+    document.getElementById('data').valueAsDate = dataConvertida;
+    document.getElementById('hora').value = m.hora;
+    document.getElementById('cliente').value = m.cliente;
+    document.getElementById('telefone').value = m.telefone;
+    document.getElementById('tipoCarga').value = m.tipoCarga;
+    document.getElementById('moradaRecolha').value = m.moradaRecolha;
+    document.getElementById('moradaEntrega').value = m.moradaEntrega;
+    document.getElementById('viatura').value = m.viatura;
+    document.getElementById('editIndex').value = index;
+  }
+
+  document.getElementById('data').addEventListener('change', validarDiaSemana);
+
+  renderTabela();
+</script>
+
+</body>
+</html>
